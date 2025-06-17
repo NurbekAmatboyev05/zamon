@@ -7,7 +7,7 @@ import r2 from "../assets/sharm.jpg";
 import r3 from "../assets/istanbul3.jpg";
 
 function Visits() {
-  const { t } = useTranslation(); // i18n yordamida tarjimani chaqirish
+  const { t } = useTranslation(); 
 
   const visitors = [
     {
@@ -19,7 +19,7 @@ function Visits() {
         population: "3.49 Mil People",
         area: "4,114 km²",
         gdp: "$46,000",
-        direction: t("need_directions"), // Tarjimaga moslashtirilgan matn
+        direction: t("need_directions"), 
       },
     },
     {
@@ -31,7 +31,7 @@ function Visits() {
         population: "2.62 Mil People",
         area: "20,723 km²",
         gdp: "$19,500",
-        direction: t("need_directions"), // Tarjimaga moslashtirilgan matn
+        direction: t("need_directions"), 
       },
     },
     {

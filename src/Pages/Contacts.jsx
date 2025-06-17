@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // useEffect ni import qildik
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPhone,
@@ -10,8 +10,8 @@ import {
   faGlobe,
   faPassport,
 } from "@fortawesome/free-solid-svg-icons";
-import { useTranslation } from 'react-i18next'; // i18n kutubxonasini import qilish
-import axios from "axios"; // axios kutubxonasini import qilish
+import { useTranslation } from 'react-i18next';
+import axios from "axios";
 import headImage from "../assets/head.jpg";
 
 function Contacts() {
@@ -21,49 +21,79 @@ function Contacts() {
   const [guests, setGuests] = useState("");
   const [destination, setDestination] = useState("");
   const [visaCountry, setVisaCountry] = useState("");
-  const [message, setMessage] = useState(""); // Xabar uchun state
-  const { t } = useTranslation(); // t() funktsiyasini ishlatish
+  const [message, setMessage] = useState("");
+  const [submissionStatus, setSubmissionStatus] = useState(null); // 'success', 'error' yoki null
+  const [submissionMessage, setSubmissionMessage] = useState(""); // Ko'rsatiladigan xabar
+  const { t } = useTranslation();
 
-  const botToken = '7762239130:AAEiSFLL8_AZXlxtLDc78LaEtqoCjpqoXmE'; // Telegram bot token
-  const chatId = 'YOUR_CHAT_ID'; // Sizning chat IDingiz
+  const botToken = '7762239130:AAEiSFLL8_AZXlxtLDc78LaEtqoCjpqoXmE'; // Sizning bot tokeningiz
+  // !!! MUHIM: Bu yerga topgan CHAT ID'ingizni kiriting. !!!
+  const chatId = 'YOUR_ACTUAL_CHAT_ID'; // MASALAN: '123456789' yoki '-1234567890'
+
+  // Xabar avtomatik o'chishi uchun useEffect
+  useEffect(() => {
+    if (submissionStatus === 'success') {
+      const timer = setTimeout(() => {
+        setSubmissionStatus(null);
+        setSubmissionMessage("");
+      }, 5000); // 5 soniyadan keyin xabar o'chadi
+      return () => clearTimeout(timer); // Komponent yopilganda timer tozalansin
+    }
+  }, [submissionStatus]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const formData = {
-      name,
-      phone,
-      guests,
-      checkInDate,
-      destination,
-      visaCountry,
-      message,
-    };
+    // Avvalgi xabarni tozalash
+    setSubmissionStatus(null);
+    setSubmissionMessage("");
+
+    // Majburiy maydonlarni tekshirish
+    if (!name || !phone || !checkInDate || !destination) {
+      setSubmissionStatus('error');
+      setSubmissionMessage("Iltimos, barcha majburiy maydonlarni to'ldiring (Ism, Telefon, Kirish sanasi, Manzil).");
+      return;
+    }
 
     const telegramMessage = `
-      Yangi rezervatsiya so'rovi:
-      Ism: ${name}
-      Telefon: ${phone}
-      Mehmonlar soni: ${guests}
-      Kirish sanasi: ${checkInDate}
-      Manzil: ${destination}
-      Vizani talab qiluvchi mamlakat: ${visaCountry}
-      Xabar: ${message}
+      <b>Yangi rezervatsiya so'rovi:</b>
+      <b>Ism:</b> ${name}
+      <b>Telefon:</b> ${phone}
+      <b>Mehmonlar soni:</b> ${guests || 'Ko\'rsatilmagan'}
+      <b>Kirish sanasi:</b> ${checkInDate}
+      <b>Manzil:</b> ${destination}
+      <b>Vizani talab qiluvchi mamlakat:</b> ${visaCountry || 'Ko\'rsatilmagan'}
+      <b>Xabar:</b> ${message || 'Yo\'q'}
     `;
 
     try {
-      // Telegram API orqali so'rov yuborish
       const response = await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         chat_id: chatId,
         text: telegramMessage,
+        parse_mode: 'HTML'
       });
       
-      console.log("Xabar yuborildi:", response.data);
-      // Xabar yuborilgandan so'ng, foydalanuvchiga bildirish
-      alert("Xabar muvaffaqiyatli yuborildi!");
+      console.log("Xabar muvaffaqiyatli yuborildi:", response.data);
+      setSubmissionStatus('success');
+      setSubmissionMessage("So'rovingiz muvaffaqiyatli yuborildi! Tez orada siz bilan bog'lanamiz.");
+
+      // Formani tozalash
+      setName("");
+      setPhone("");
+      setGuests("");
+      setCheckInDate("");
+      setDestination("");
+      setVisaCountry("");
+      setMessage("");
+
     } catch (error) {
-      console.error("Xabar yuborishda xato:", error);
-      alert("Xabar yuborishda xato yuz berdi.");
+      console.error("Xabar yuborishda xato yuz berdi:", error);
+      setSubmissionStatus('error');
+      if (error.response && error.response.data) {
+        setSubmissionMessage(`Xabar yuborishda xato: ${error.response.data.description || 'Noma\'lum xato'}`);
+      } else {
+        setSubmissionMessage("Xabar yuborishda tarmoq muammosi yuz berdi. Iltimos, keyinroq urinib ko'ring.");
+      }
     }
   };
 
@@ -124,6 +154,17 @@ function Contacts() {
           <h3 className="text-2xl text-[#1db5ba] font-semibold mb-4">
             {t("MakeReservationThroughForm")}
           </h3>
+
+          {/* Xabar ko'rsatish qismi */}
+          {submissionStatus && (
+            <div
+              className={`p-3 rounded-lg text-white font-semibold text-center
+                ${submissionStatus === 'success' ? 'bg-green-500' : 'bg-red-500'}
+              `}
+            >
+              {submissionMessage}
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <FontAwesomeIcon icon={faUser} className="text-[#1db5ba]" />
